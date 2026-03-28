@@ -4,20 +4,27 @@ Python gRPC service for non-linear equation solving
 """
 
 import grpc
+import http.server
+import threading
+import time
 from concurrent import futures
 import logging
 from dataclasses import dataclass
-from typing import List, Callable, Tuple
+from typing import List, Callable
+
 import numpy as np
 from scipy.optimize import fsolve, root
-import sys
 
-# Generated from liquidvolume.proto
+# Generated from calculation.proto
 import calculation_pb2
 import calculation_pb2_grpc
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Unit conversion constants
+M3_TO_BBL = 6.28981
+M3_TO_GAL = 264.172
 
 
 # ============================================================================
@@ -80,26 +87,19 @@ class EquationSolver:
 
     @staticmethod
     def solve_fsolve(system: EquationSystem) -> SolutionResult:
-        """
-        SciPy's fsolve - robust and fast for most cases
-        Uses modified Powell method
-        """
+        """SciPy's fsolve - robust and fast for most cases"""
         try:
             system_func = system.compile_equations()
-
-            # Main solver call
             solution = fsolve(
                 system_func,
                 system.initial_guess,
                 full_output=True,
                 xtol=1e-9
             )
-
             variables, info, ier, msg = solution
-
             return SolutionResult(
                 variables=variables.tolist(),
-                convergence_iterations=info['nfev'],  # Function evals = iterations
+                convergence_iterations=info['nfev'],
                 residual=float(np.linalg.norm(info['fvec'])),
                 success=(ier == 1),
                 message=msg,
@@ -107,31 +107,14 @@ class EquationSolver:
             )
         except Exception as e:
             logger.error(f"fsolve failed: {e}")
-            return SolutionResult(
-                variables=[],
-                convergence_iterations=0,
-                residual=float('inf'),
-                success=False,
-                message=str(e),
-                variable_names=system.variable_names
-            )
+            return SolutionResult([], 0, float('inf'), False, str(e), system.variable_names)
 
     @staticmethod
     def solve_root_hybr(system: EquationSystem) -> SolutionResult:
-        """
-        SciPy's root() with hybr method - more robust for difficult systems
-        Better for singular Jacobians
-        """
+        """SciPy's root() with hybr method - more robust for difficult systems"""
         try:
             system_func = system.compile_equations()
-
-            result = root(
-                system_func,
-                system.initial_guess,
-                method='hybr',
-                options={'xtol': 1e-9}
-            )
-
+            result = root(system_func, system.initial_guess, method='hybr', options={'xtol': 1e-9})
             return SolutionResult(
                 variables=result.x.tolist(),
                 convergence_iterations=result.nfev,
@@ -142,31 +125,14 @@ class EquationSolver:
             )
         except Exception as e:
             logger.error(f"root(hybr) failed: {e}")
-            return SolutionResult(
-                variables=[],
-                convergence_iterations=0,
-                residual=float('inf'),
-                success=False,
-                message=str(e),
-                variable_names=system.variable_names
-            )
+            return SolutionResult([], 0, float('inf'), False, str(e), system.variable_names)
 
     @staticmethod
     def solve_lm(system: EquationSystem) -> SolutionResult:
-        """
-        SciPy's root() with Levenberg-Marquardt - good for ill-conditioned systems
-        Better for least-squares problems
-        """
+        """SciPy's root() with Levenberg-Marquardt - good for ill-conditioned systems"""
         try:
             system_func = system.compile_equations()
-
-            result = root(
-                system_func,
-                system.initial_guess,
-                method='lm',
-                options={'xtol': 1e-9}
-            )
-
+            result = root(system_func, system.initial_guess, method='lm', options={'xtol': 1e-9})
             return SolutionResult(
                 variables=result.x.tolist(),
                 convergence_iterations=result.nfev,
@@ -177,14 +143,7 @@ class EquationSolver:
             )
         except Exception as e:
             logger.error(f"root(lm) failed: {e}")
-            return SolutionResult(
-                variables=[],
-                convergence_iterations=0,
-                residual=float('inf'),
-                success=False,
-                message=str(e),
-                variable_names=system.variable_names
-            )
+            return SolutionResult([], 0, float('inf'), False, str(e), system.variable_names)
 
 
 # ============================================================================
@@ -192,10 +151,7 @@ class EquationSolver:
 # ============================================================================
 
 class VolumeCalculatorService:
-    """
-    Main service for volume calculations
-    Analogy: Like a @Service bean in Spring - coordinates work
-    """
+    """Main service for volume calculations"""
 
     def __init__(self):
         self.solver = EquationSolver()
@@ -207,48 +163,22 @@ class VolumeCalculatorService:
             variable_names: List[str],
             method: str = "auto"
     ) -> SolutionResult:
-        """
-        Calculate liquid volume by solving equation system
-
-        Args:
-            equations: List of equation strings (e.g., ["x**2 + y**2 - 1", "x - y"])
-            initial_guess: Starting point for solver
-            variable_names: Names of variables (x, y, etc.)
-            method: "auto", "fsolve", "hybr", "lm"
-
-        Returns:
-            SolutionResult with computed variables
-        """
-
-        # Validate inputs
         if len(equations) != len(variable_names):
-            return SolutionResult(
-                variables=[],
-                convergence_iterations=0,
-                residual=float('inf'),
-                success=False,
-                message="Number of equations must match number of variables",
-                variable_names=variable_names
-            )
+            return SolutionResult([], 0, float('inf'), False,
+                                  "Number of equations must match number of variables",
+                                  variable_names)
 
         if len(initial_guess) != len(variable_names):
-            return SolutionResult(
-                variables=[],
-                convergence_iterations=0,
-                residual=float('inf'),
-                success=False,
-                message="Initial guess size must match number of variables",
-                variable_names=variable_names
-            )
+            return SolutionResult([], 0, float('inf'), False,
+                                  "Initial guess size must match number of variables",
+                                  variable_names)
 
-        # Create system
         system = EquationSystem(
             equations=equations,
             initial_guess=initial_guess,
             variable_names=variable_names
         )
 
-        # Choose solver strategy
         logger.info(f"Solving system with method={method}: {equations}")
 
         if method == "fsolve":
@@ -269,111 +199,208 @@ class VolumeCalculatorService:
 # gRPC SERVICE IMPLEMENTATION
 # ============================================================================
 
-class LiquidVolumeSolverServicer(calculation_pb2_grpc.LiquidVolumeSolverServicer):
+class CalculationServiceServicer(calculation_pb2_grpc.CalculationServiceServicer):
     """
-    gRPC service implementation
-    Handles requests from SpringBoot gateway
+    gRPC service implementation.
+    Implements CalculationService with server-streaming Calculate RPC.
     """
 
     def __init__(self):
         self.calculator = VolumeCalculatorService()
 
-    def SolveVolumeEquations(self, request, context):
-        """
-        RPC method: SolveVolumeEquations
+    def _progress(self, calculation_id: str, pct: int, phase: str,
+                  iteration: int = 0, metric: float = 0.0, message: str = "") -> calculation_pb2.CalculationUpdate:
+        return calculation_pb2.CalculationUpdate(
+            calculation_id=calculation_id,
+            progress=calculation_pb2.Progress(
+                percentage=pct,
+                phase=phase,
+                iteration=iteration,
+                convergence_metric=metric,
+                message=message
+            )
+        )
 
-        Receives:
-        - equations: list of equation strings
-        - initialGuess: starting point
-        - variableNames: x, y, z, etc.
-        - solverMethod: "auto", "fsolve", "hybr", "lm"
-
-        Returns: SolutionResponse with solution
+    def Calculate(self, request, context):
         """
+        Server-streaming RPC: Calculate.
+        Streams progress updates then a final result (or error).
+        """
+        calc_id = request.calculation_id
+        logger.info(f"Received Calculate request: {calc_id}")
+
+        yield self._progress(calc_id, 5, "INITIALIZING", message="Parsing equations...")
+
+        equations = list(request.equations)
+        initial_params = list(request.initial_parameters)
+        method = request.options.solver_method or "auto"
+        unit_system = request.options.unit_system or "metric"
+
+        # Auto-generate variable names from equation count
+        n = len(equations)
+        variable_names = [f"x{i}" for i in range(n)]
+
+        # Use initial_parameters as initial guess; pad/truncate to match equation count
+        if len(initial_params) < n:
+            initial_params.extend([1.0] * (n - len(initial_params)))
+        elif len(initial_params) > n:
+            initial_params = initial_params[:n]
+
+        if n == 0:
+            yield calculation_pb2.CalculationUpdate(
+                calculation_id=calc_id,
+                error=calculation_pb2.Error(
+                    error_code="INVALID_INPUT",
+                    error_message="No equations provided"
+                )
+            )
+            return
+
+        yield self._progress(calc_id, 20, "SETTING_UP",
+                             message=f"Setting up {n}-equation system...")
+
+        yield self._progress(calc_id, 50, "SOLVING",
+                             message=f"Running solver (method={method})...")
+
+        start_time = time.time()
         try:
-            logger.info(f"Received request for well: {request.wellId}")
-            logger.debug(f"Equations: {request.equations}")
-            logger.debug(f"Variable names: {request.variableNames}")
-            logger.debug(f"Initial guess: {request.initialGuess}")
-            logger.debug(f"Solver method: {request.solverMethod}")
-
-            # Convert protobuf lists to Python lists
-            equations = list(request.equations)
-            initial_guess = list(request.initialGuess)
-            variable_names = list(request.variableNames)
-            method = request.solverMethod or "auto"
-
-            # Validate inputs
-            if len(equations) != len(variable_names):
-                error_msg = f"Mismatch: {len(equations)} equations but {len(variable_names)} variable names"
-                logger.error(error_msg)
-                return calculation_pb2.SolutionResponse(
-                    success=False,
-                    message=error_msg
-                )
-
-            if len(initial_guess) != len(variable_names):
-                error_msg = f"Mismatch: initial guess has {len(initial_guess)} values but {len(variable_names)} variable names"
-                logger.error(error_msg)
-                return calculation_pb2.SolutionResponse(
-                    success=False,
-                    message=error_msg
-                )
-
-            # Solve
             result = self.calculator.calculate_volume(
                 equations=equations,
-                initial_guess=initial_guess,
+                initial_guess=initial_params,
                 variable_names=variable_names,
                 method=method
             )
-
-            logger.info(f"Solution found: {result.success}, "
-                        f"iterations: {result.convergence_iterations}, "
-                        f"residual: {result.residual}")
-
-            # Convert to protobuf response
-            return calculation_pb2.SolutionResponse(
-                wellId=request.wellId,
-                success=result.success,
-                variables=result.variables,
-                iterations=result.convergence_iterations,
-                residual=result.residual,
-                message=result.message
-            )
-
         except Exception as e:
-            logger.error(f"Error in SolveVolumeEquations: {e}", exc_info=True)
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"Error: {str(e)}")
-            return calculation_pb2.SolutionResponse(
-                success=False,
-                message=f"Error: {str(e)}"
+            logger.error(f"Solver exception for {calc_id}: {e}", exc_info=True)
+            yield calculation_pb2.CalculationUpdate(
+                calculation_id=calc_id,
+                error=calculation_pb2.Error(
+                    error_code="SOLVER_EXCEPTION",
+                    error_message=str(e)
+                )
             )
+            return
+
+        elapsed_ms = int((time.time() - start_time) * 1000)
+
+        if not result.success:
+            logger.warning(f"Solver did not converge for {calc_id}: {result.message}")
+            yield calculation_pb2.CalculationUpdate(
+                calculation_id=calc_id,
+                error=calculation_pb2.Error(
+                    error_code="SOLVER_NOT_CONVERGED",
+                    error_message=result.message
+                )
+            )
+            return
+
+        yield self._progress(calc_id, 90, "FINALIZING",
+                             iteration=result.convergence_iterations,
+                             metric=result.residual,
+                             message="Computing volume requirements...")
+
+        # Convert solution variables to VolumeRequirements
+        # Each solution variable represents a fluid volume in m³
+        well_config = request.well_config
+        fluid_type = well_config.fluid_type if well_config.fluid_type else "fluid"
+
+        volumes = []
+        for i, v in enumerate(result.variables):
+            volume_m3 = abs(v)
+            fluid_label = f"{fluid_type}_{variable_names[i]}" if n > 1 else fluid_type
+            volumes.append(calculation_pb2.VolumeRequirement(
+                fluid_type=fluid_label,
+                volume_m3=volume_m3,
+                volume_bbl=volume_m3 * M3_TO_BBL,
+                volume_gal=volume_m3 * M3_TO_GAL,
+                calculation_basis=f"Equation: {equations[i]}"
+            ))
+
+        metadata = calculation_pb2.CalculationMetadata(
+            algorithm_used=method,
+            iterations=result.convergence_iterations,
+            final_convergence=result.residual,
+            elapsed_ms=elapsed_ms,
+            converged=result.success,
+            unit_system=unit_system
+        )
+
+        logger.info(f"Calculation complete: {calc_id}, iterations={result.convergence_iterations}, "
+                    f"residual={result.residual:.2e}, elapsed={elapsed_ms}ms")
+
+        yield calculation_pb2.CalculationUpdate(
+            calculation_id=calc_id,
+            result=calculation_pb2.CalculationResult(
+                volumes=volumes,
+                metadata=metadata
+            )
+        )
 
     def HealthCheck(self, request, context):
-        """Simple health check endpoint"""
-        return calculation_pb2.HealthCheckResponse(status="SERVING")
+        return calculation_pb2.HealthResponse(
+            status="SERVING",
+            version="1.0.0",
+            service="calculator-python-service"
+        )
+
+
+# ============================================================================
+# HTTP HEALTH ENDPOINT (for Docker healthcheck)
+# ============================================================================
+
+def _run_health_http_server(port: int = 8000):
+    """Minimal HTTP server for Docker healthcheck on port 8000."""
+
+    class HealthHandler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == '/health':
+                body = b'{"status":"UP"}'
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+        def log_message(self, fmt, *args):
+            pass  # suppress access logs
+
+    httpd = http.server.HTTPServer(('', port), HealthHandler)
+    httpd.serve_forever()
 
 
 # ============================================================================
 # SERVER STARTUP
 # ============================================================================
 
-def serve(port: int = 50051):
-    """Start gRPC server"""
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+def serve(grpc_port: int = 50051, health_port: int = 8000):
+    """Start gRPC server and HTTP health endpoint."""
 
-    calculation_pb2_grpc.add_LiquidVolumeSolverServicer_to_server(
-        LiquidVolumeSolverServicer(),
+    # Start HTTP health server in background daemon thread
+    health_thread = threading.Thread(
+        target=_run_health_http_server,
+        args=(health_port,),
+        daemon=True,
+        name="http-health"
+    )
+    health_thread.start()
+    logger.info(f"HTTP health endpoint started on port {health_port}")
+
+    # Start gRPC server
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    calculation_pb2_grpc.add_CalculationServiceServicer_to_server(
+        CalculationServiceServicer(),
         server
     )
 
-    server.add_insecure_port(f'[::]:{port}')
+    server.add_insecure_port(f'[::]:{grpc_port}')
     server.start()
 
-    logger.info(f"Oil & Gas Volume Calculator Service started on port {port}")
-    print(f"🚀 gRPC server listening on port {port}")
+    logger.info(f"Oil & Gas Volume Calculator Service started on port {grpc_port}")
+    print(f"gRPC server listening on port {grpc_port}")
+    print(f"HTTP health endpoint on port {health_port}")
 
     try:
         server.wait_for_termination()

@@ -1,6 +1,6 @@
-websockets
+websockets==14.2
 grpcio==1.75.1
-grpcio-tools== 1.75.1
+grpcio-tools==1.75.1
 numpy==2.3.4
 scipy==1.16.2
 python-dotenv==1.1.1

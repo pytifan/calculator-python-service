@@ -25,11 +25,8 @@ if _version_not_supported:
     )
 
 
-class LiquidVolumeSolverStub(object):
-    """============================================================================
-    SERVICE DEFINITION (Matches SpringBoot client expectations)
-    ============================================================================
-    """
+class CalculationServiceStub(object):
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -37,67 +34,59 @@ class LiquidVolumeSolverStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.SolveVolumeEquations = channel.unary_unary(
-                '/grpc.LiquidVolumeSolver/SolveVolumeEquations',
-                request_serializer=calculation__pb2.SolutionRequest.SerializeToString,
-                response_deserializer=calculation__pb2.SolutionResponse.FromString,
+        self.Calculate = channel.unary_stream(
+                '/calculations.CalculationService/Calculate',
+                request_serializer=calculation__pb2.CalculationRequest.SerializeToString,
+                response_deserializer=calculation__pb2.CalculationUpdate.FromString,
                 _registered_method=True)
         self.HealthCheck = channel.unary_unary(
-                '/grpc.LiquidVolumeSolver/HealthCheck',
-                request_serializer=calculation__pb2.HealthCheckRequest.SerializeToString,
-                response_deserializer=calculation__pb2.HealthCheckResponse.FromString,
+                '/calculations.CalculationService/HealthCheck',
+                request_serializer=calculation__pb2.Empty.SerializeToString,
+                response_deserializer=calculation__pb2.HealthResponse.FromString,
                 _registered_method=True)
 
 
-class LiquidVolumeSolverServicer(object):
-    """============================================================================
-    SERVICE DEFINITION (Matches SpringBoot client expectations)
-    ============================================================================
-    """
+class CalculationServiceServicer(object):
+    """Missing associated documentation comment in .proto file."""
 
-    def SolveVolumeEquations(self, request, context):
-        """Main RPC: Solve non-linear equation system for volume calculation
-        """
+    def Calculate(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def HealthCheck(self, request, context):
-        """Health check
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
 
-def add_LiquidVolumeSolverServicer_to_server(servicer, server):
+def add_CalculationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'SolveVolumeEquations': grpc.unary_unary_rpc_method_handler(
-                    servicer.SolveVolumeEquations,
-                    request_deserializer=calculation__pb2.SolutionRequest.FromString,
-                    response_serializer=calculation__pb2.SolutionResponse.SerializeToString,
+            'Calculate': grpc.unary_stream_rpc_method_handler(
+                    servicer.Calculate,
+                    request_deserializer=calculation__pb2.CalculationRequest.FromString,
+                    response_serializer=calculation__pb2.CalculationUpdate.SerializeToString,
             ),
             'HealthCheck': grpc.unary_unary_rpc_method_handler(
                     servicer.HealthCheck,
-                    request_deserializer=calculation__pb2.HealthCheckRequest.FromString,
-                    response_serializer=calculation__pb2.HealthCheckResponse.SerializeToString,
+                    request_deserializer=calculation__pb2.Empty.FromString,
+                    response_serializer=calculation__pb2.HealthResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'grpc.LiquidVolumeSolver', rpc_method_handlers)
+            'calculations.CalculationService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('grpc.LiquidVolumeSolver', rpc_method_handlers)
+    server.add_registered_method_handlers('calculations.CalculationService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class LiquidVolumeSolver(object):
-    """============================================================================
-    SERVICE DEFINITION (Matches SpringBoot client expectations)
-    ============================================================================
-    """
+class CalculationService(object):
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def SolveVolumeEquations(request,
+    def Calculate(request,
             target,
             options=(),
             channel_credentials=None,
@@ -107,12 +96,12 @@ class LiquidVolumeSolver(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
+        return grpc.experimental.unary_stream(
             request,
             target,
-            '/grpc.LiquidVolumeSolver/SolveVolumeEquations',
-            calculation__pb2.SolutionRequest.SerializeToString,
-            calculation__pb2.SolutionResponse.FromString,
+            '/calculations.CalculationService/Calculate',
+            calculation__pb2.CalculationRequest.SerializeToString,
+            calculation__pb2.CalculationUpdate.FromString,
             options,
             channel_credentials,
             insecure,
@@ -137,9 +126,9 @@ class LiquidVolumeSolver(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/grpc.LiquidVolumeSolver/HealthCheck',
-            calculation__pb2.HealthCheckRequest.SerializeToString,
-            calculation__pb2.HealthCheckResponse.FromString,
+            '/calculations.CalculationService/HealthCheck',
+            calculation__pb2.Empty.SerializeToString,
+            calculation__pb2.HealthResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -1,61 +1,86 @@
 syntax = "proto3";
 
-package grpc;
+package calculations;
 
-// ============================================================================
-// SERVICE DEFINITION (Matches SpringBoot client expectations)
-// ============================================================================
-service LiquidVolumeSolver {
-  // Main RPC: Solve non-linear equation system for volume calculation
-  rpc SolveVolumeEquations(SolutionRequest) returns (SolutionResponse);
+option java_package = "com.oilgas.calculations.grpc";
+option java_outer_classname = "CalculationsProto";
 
-  // Health check
-  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+service CalculationService {
+  rpc Calculate(CalculationRequest) returns (stream CalculationUpdate);
+  rpc HealthCheck(Empty) returns (HealthResponse);
 }
 
-// ============================================================================
-// REQUEST/RESPONSE MESSAGES
-// ============================================================================
-message SolutionRequest {
-  // Unique well identifier
-  string wellId = 1;
+message Empty {}
 
-  // System of equations: each string is Python code
-  // Example: ["x**2 + y**2 - 1", "x - y"]
+message CalculationRequest {
+  string calculation_id = 1;
   repeated string equations = 2;
-
-  // Variable names in order: ["x", "y"]
-  repeated string variableNames = 3;
-
-  // Initial guess/seed point: [1.0, 1.0]
-  repeated double initialGuess = 4;
-
-  // Solver method: "auto", "fsolve", "hybr", "lm"
-  string solverMethod = 5;
+  repeated double initial_parameters = 3;
+  CalculationOptions options = 4;
+  WellConfiguration well_config = 5;
 }
 
-message SolutionResponse {
-  // Unique well identifier (echo from request)
-  string wellId = 1;
-
-  // Did solver converge successfully?
-  bool success = 2;
-
-  // Solution values: [x_solution, y_solution, ...]
-  repeated double variables = 3;
-
-  // Number of iterations to converge
-  int32 iterations = 4;
-
-  // Residual (how close to solving the equations)
-  double residual = 5;
-
-  // Status message
-  string message = 6;
+message WellConfiguration {
+  string well_name = 1;
+  string field_name = 2;
+  double depth_meters = 3;
+  double diameter_inches = 4;
+  string fluid_type = 5;
 }
 
-message HealthCheckRequest {}
+message CalculationOptions {
+  string solver_method = 1;
+  int32 max_iterations = 2;
+  double tolerance = 3;
+  string unit_system = 4;
+}
 
-message HealthCheckResponse {
-  string status = 1;  // "SERVING", "NOT_SERVING", etc.
+message CalculationUpdate {
+  string calculation_id = 1;
+  oneof update {
+    Progress progress = 2;
+    CalculationResult result = 3;
+    Error error = 4;
+  }
+}
+
+message Progress {
+  int32 percentage = 1;
+  string phase = 2;
+  int32 iteration = 3;
+  double convergence_metric = 4;
+  string message = 5;
+}
+
+message CalculationResult {
+  repeated VolumeRequirement volumes = 1;
+  CalculationMetadata metadata = 2;
+}
+
+message VolumeRequirement {
+  string fluid_type = 1;
+  double volume_m3 = 2;
+  double volume_bbl = 3;
+  double volume_gal = 4;
+  string calculation_basis = 5;
+}
+
+message CalculationMetadata {
+  string algorithm_used = 1;
+  int32 iterations = 2;
+  double final_convergence = 3;
+  int64 elapsed_ms = 4;
+  bool converged = 5;
+  string unit_system = 6;
+}
+
+message Error {
+  string error_code = 1;
+  string error_message = 2;
+}
+
+message HealthResponse {
+  string status = 1;
+  string version = 2;
+  string service = 3;
 }
