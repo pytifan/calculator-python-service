@@ -3,6 +3,7 @@ Oil & Gas Liquid Volume Calculator Service
 Python gRPC service for non-linear equation solving
 """
 
+import ast
 import grpc
 import http.server
 import threading
@@ -25,6 +26,33 @@ logger = logging.getLogger(__name__)
 # Unit conversion constants
 M3_TO_BBL = 6.28981
 M3_TO_GAL = 264.172
+
+# Python built-ins / math names that are NOT variable names
+_EXCLUDED_NAMES = frozenset(dir(__builtins__) if isinstance(__builtins__, dict) else dir(__builtins__)) | {
+    'abs', 'sqrt', 'sin', 'cos', 'tan', 'exp', 'log', 'pi', 'e',
+    'True', 'False', 'None'
+}
+
+
+def extract_variable_names(equations: List[str]) -> List[str]:
+    """
+    Extract unique variable names used in equations by parsing the AST.
+    Names that appear in the equations (in order of first appearance) that
+    are not Python built-ins are treated as variables.
+    """
+    seen = []
+    seen_set = set()
+    for eq in equations:
+        try:
+            tree = ast.parse(eq, mode='eval')
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Name) and node.id not in _EXCLUDED_NAMES:
+                    if node.id not in seen_set:
+                        seen_set.add(node.id)
+                        seen.append(node.id)
+        except SyntaxError:
+            pass
+    return seen
 
 
 # ============================================================================
@@ -236,28 +264,28 @@ class CalculationServiceServicer(calculation_pb2_grpc.CalculationServiceServicer
         method = request.options.solver_method or "auto"
         unit_system = request.options.unit_system or "metric"
 
-        # Auto-generate variable names from equation count
-        n = len(equations)
-        variable_names = [f"x{i}" for i in range(n)]
+        # Extract variable names from the equation strings
+        variable_names = extract_variable_names(equations)
+        n = len(variable_names)
 
-        # Use initial_parameters as initial guess; pad/truncate to match equation count
+        if n == 0 or len(equations) == 0:
+            yield calculation_pb2.CalculationUpdate(
+                calculation_id=calc_id,
+                error=calculation_pb2.Error(
+                    error_code="INVALID_INPUT",
+                    error_message="No equations provided or no variables detected"
+                )
+            )
+            return
+
+        # Pad/truncate initial_parameters to match the number of variables
         if len(initial_params) < n:
             initial_params.extend([1.0] * (n - len(initial_params)))
         elif len(initial_params) > n:
             initial_params = initial_params[:n]
 
-        if n == 0:
-            yield calculation_pb2.CalculationUpdate(
-                calculation_id=calc_id,
-                error=calculation_pb2.Error(
-                    error_code="INVALID_INPUT",
-                    error_message="No equations provided"
-                )
-            )
-            return
-
         yield self._progress(calc_id, 20, "SETTING_UP",
-                             message=f"Setting up {n}-equation system...")
+                             message=f"Setting up {n}-equation system with variables: {variable_names}...")
 
         yield self._progress(calc_id, 50, "SOLVING",
                              message=f"Running solver (method={method})...")
