@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package grpc;
+
+// ============================================================================
+// SERVICE DEFINITION (Matches SpringBoot client expectations)
+// ============================================================================
+service LiquidVolumeSolver {
+  // Main RPC: Solve non-linear equation system for volume calculation
+  rpc SolveVolumeEquations(SolutionRequest) returns (SolutionResponse);
+
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// ============================================================================
+// REQUEST/RESPONSE MESSAGES
+// ============================================================================
+message SolutionRequest {
+  // Unique well identifier
+  string wellId = 1;
+
+  // System of equations: each string is Python code
+  // Example: ["x**2 + y**2 - 1", "x - y"]
+  repeated string equations = 2;
+
+  // Variable names in order: ["x", "y"]
+  repeated string variableNames = 3;
+
+  // Initial guess/seed point: [1.0, 1.0]
+  repeated double initialGuess = 4;
+
+  // Solver method: "auto", "fsolve", "hybr", "lm"
+  string solverMethod = 5;
+}
+
+message SolutionResponse {
+  // Unique well identifier (echo from request)
+  string wellId = 1;
+
+  // Did solver converge successfully?
+  bool success = 2;
+
+  // Solution values: [x_solution, y_solution, ...]
+  repeated double variables = 3;
+
+  // Number of iterations to converge
+  int32 iterations = 4;
+
+  // Residual (how close to solving the equations)
+  double residual = 5;
+
+  // Status message
+  string message = 6;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;  // "SERVING", "NOT_SERVING", etc.
+}
