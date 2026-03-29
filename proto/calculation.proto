@@ -12,12 +12,25 @@ service CalculationService {
 
 message Empty {}
 
+message WellParameters {
+  double tubing_length_m          = 1;
+  double tubing_od_mm             = 2;
+  double tubing_wall_mm           = 3;
+  double casing_od_mm             = 4;
+  double casing_wall_mm           = 5;
+  double fluid_density_kg_m3      = 6;
+  double gravity_m_s2             = 7;
+  double initial_water_level_m    = 8;
+  double surface_pressure_pa      = 9;
+  double max_wellhead_pressure_pa = 10;
+  double min_wellhead_pressure_pa = 11;
+}
+
 message CalculationRequest {
   string calculation_id = 1;
-  repeated string equations = 2;
-  repeated double initial_parameters = 3;
   CalculationOptions options = 4;
   WellConfiguration well_config = 5;
+  WellParameters well_params = 6;
 }
 
 message WellConfiguration {
@@ -29,9 +42,6 @@ message WellConfiguration {
 }
 
 message CalculationOptions {
-  string solver_method = 1;
-  int32 max_iterations = 2;
-  double tolerance = 3;
   string unit_system = 4;
 }
 
@@ -45,11 +55,16 @@ message CalculationUpdate {
 }
 
 message Progress {
-  int32 percentage = 1;
-  string phase = 2;
-  int32 iteration = 3;
+  int32  percentage         = 1;
+  string phase              = 2;
+  int32  iteration          = 3;
   double convergence_metric = 4;
-  string message = 5;
+  string message            = 5;
+  double wellhead_pressure_pa = 6;
+  double bottom_pressure_pa   = 7;
+  double volume_pumped_m3     = 8;
+  double annulus_front_m      = 9;
+  double tubing_front_m       = 10;
 }
 
 message CalculationResult {

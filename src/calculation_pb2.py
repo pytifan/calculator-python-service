@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x63\x61lculation.proto\x12\x0c\x63\x61lculations\"\x07\n\x05\x45mpty\"\xc4\x01\n\x12\x43\x61lculationRequest\x12\x16\n\x0e\x63\x61lculation_id\x18\x01 \x01(\t\x12\x11\n\tequations\x18\x02 \x03(\t\x12\x1a\n\x12initial_parameters\x18\x03 \x03(\x01\x12\x31\n\x07options\x18\x04 \x01(\x0b\x32 .calculations.CalculationOptions\x12\x34\n\x0bwell_config\x18\x05 \x01(\x0b\x32\x1f.calculations.WellConfiguration\"}\n\x11WellConfiguration\x12\x11\n\twell_name\x18\x01 \x01(\t\x12\x12\n\nfield_name\x18\x02 \x01(\t\x12\x14\n\x0c\x64\x65pth_meters\x18\x03 \x01(\x01\x12\x17\n\x0f\x64iameter_inches\x18\x04 \x01(\x01\x12\x12\n\nfluid_type\x18\x05 \x01(\t\"k\n\x12\x43\x61lculationOptions\x12\x15\n\rsolver_method\x18\x01 \x01(\t\x12\x16\n\x0emax_iterations\x18\x02 \x01(\x05\x12\x11\n\ttolerance\x18\x03 \x01(\x01\x12\x13\n\x0bunit_system\x18\x04 \x01(\t\"\xba\x01\n\x11\x43\x61lculationUpdate\x12\x16\n\x0e\x63\x61lculation_id\x18\x01 \x01(\t\x12*\n\x08progress\x18\x02 \x01(\x0b\x32\x16.calculations.ProgressH\x00\x12\x31\n\x06result\x18\x03 \x01(\x0b\x32\x1f.calculations.CalculationResultH\x00\x12$\n\x05\x65rror\x18\x04 \x01(\x0b\x32\x13.calculations.ErrorH\x00\x42\x08\n\x06update\"m\n\x08Progress\x12\x12\n\npercentage\x18\x01 \x01(\x05\x12\r\n\x05phase\x18\x02 \x01(\t\x12\x11\n\titeration\x18\x03 \x01(\x05\x12\x1a\n\x12\x63onvergence_metric\x18\x04 \x01(\x01\x12\x0f\n\x07message\x18\x05 \x01(\t\"z\n\x11\x43\x61lculationResult\x12\x30\n\x07volumes\x18\x01 \x03(\x0b\x32\x1f.calculations.VolumeRequirement\x12\x33\n\x08metadata\x18\x02 \x01(\x0b\x32!.calculations.CalculationMetadata\"}\n\x11VolumeRequirement\x12\x12\n\nfluid_type\x18\x01 \x01(\t\x12\x11\n\tvolume_m3\x18\x02 \x01(\x01\x12\x12\n\nvolume_bbl\x18\x03 \x01(\x01\x12\x12\n\nvolume_gal\x18\x04 \x01(\x01\x12\x19\n\x11\x63\x61lculation_basis\x18\x05 \x01(\t\"\x98\x01\n\x13\x43\x61lculationMetadata\x12\x16\n\x0e\x61lgorithm_used\x18\x01 \x01(\t\x12\x12\n\niterations\x18\x02 \x01(\x05\x12\x19\n\x11\x66inal_convergence\x18\x03 \x01(\x01\x12\x12\n\nelapsed_ms\x18\x04 \x01(\x03\x12\x11\n\tconverged\x18\x05 \x01(\x08\x12\x13\n\x0bunit_system\x18\x06 \x01(\t\"2\n\x05\x45rror\x12\x12\n\nerror_code\x18\x01 \x01(\t\x12\x15\n\rerror_message\x18\x02 \x01(\t\"B\n\x0eHealthResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x0f\n\x07service\x18\x03 \x01(\t2\xa8\x01\n\x12\x43\x61lculationService\x12P\n\tCalculate\x12 .calculations.CalculationRequest\x1a\x1f.calculations.CalculationUpdate0\x01\x12@\n\x0bHealthCheck\x12\x13.calculations.Empty\x1a\x1c.calculations.HealthResponseB1\n\x1c\x63om.oilgas.calculations.grpcB\x11\x43\x61lculationsProtob\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x63\x61lculation.proto\x12\x0c\x63\x61lculations\"\x07\n\x05\x45mpty\"\xb8\x02\n\x0eWellParameters\x12\x17\n\x0ftubing_length_m\x18\x01 \x01(\x01\x12\x14\n\x0ctubing_od_mm\x18\x02 \x01(\x01\x12\x16\n\x0etubing_wall_mm\x18\x03 \x01(\x01\x12\x14\n\x0c\x63\x61sing_od_mm\x18\x04 \x01(\x01\x12\x16\n\x0e\x63\x61sing_wall_mm\x18\x05 \x01(\x01\x12\x1b\n\x13\x66luid_density_kg_m3\x18\x06 \x01(\x01\x12\x14\n\x0cgravity_m_s2\x18\x07 \x01(\x01\x12\x1d\n\x15initial_water_level_m\x18\x08 \x01(\x01\x12\x1b\n\x13surface_pressure_pa\x18\t \x01(\x01\x12 \n\x18max_wellhead_pressure_pa\x18\n \x01(\x01\x12 \n\x18min_wellhead_pressure_pa\x18\x0b \x01(\x01\"\xc8\x01\n\x12\x43\x61lculationRequest\x12\x16\n\x0e\x63\x61lculation_id\x18\x01 \x01(\t\x12\x31\n\x07options\x18\x04 \x01(\x0b\x32 .calculations.CalculationOptions\x12\x34\n\x0bwell_config\x18\x05 \x01(\x0b\x32\x1f.calculations.WellConfiguration\x12\x31\n\x0bwell_params\x18\x06 \x01(\x0b\x32\x1c.calculations.WellParameters\"}\n\x11WellConfiguration\x12\x11\n\twell_name\x18\x01 \x01(\t\x12\x12\n\nfield_name\x18\x02 \x01(\t\x12\x14\n\x0c\x64\x65pth_meters\x18\x03 \x01(\x01\x12\x17\n\x0f\x64iameter_inches\x18\x04 \x01(\x01\x12\x12\n\nfluid_type\x18\x05 \x01(\t\")\n\x12\x43\x61lculationOptions\x12\x13\n\x0bunit_system\x18\x04 \x01(\t\"\xba\x01\n\x11\x43\x61lculationUpdate\x12\x16\n\x0e\x63\x61lculation_id\x18\x01 \x01(\t\x12*\n\x08progress\x18\x02 \x01(\x0b\x32\x16.calculations.ProgressH\x00\x12\x31\n\x06result\x18\x03 \x01(\x0b\x32\x1f.calculations.CalculationResultH\x00\x12$\n\x05\x65rror\x18\x04 \x01(\x0b\x32\x13.calculations.ErrorH\x00\x42\x08\n\x06update\"\xf2\x01\n\x08Progress\x12\x12\n\npercentage\x18\x01 \x01(\x05\x12\r\n\x05phase\x18\x02 \x01(\t\x12\x11\n\titeration\x18\x03 \x01(\x05\x12\x1a\n\x12\x63onvergence_metric\x18\x04 \x01(\x01\x12\x0f\n\x07message\x18\x05 \x01(\t\x12\x1c\n\x14wellhead_pressure_pa\x18\x06 \x01(\x01\x12\x1a\n\x12\x62ottom_pressure_pa\x18\x07 \x01(\x01\x12\x18\n\x10volume_pumped_m3\x18\x08 \x01(\x01\x12\x17\n\x0f\x61nnulus_front_m\x18\t \x01(\x01\x12\x16\n\x0etubing_front_m\x18\n \x01(\x01\"z\n\x11\x43\x61lculationResult\x12\x30\n\x07volumes\x18\x01 \x03(\x0b\x32\x1f.calculations.VolumeRequirement\x12\x33\n\x08metadata\x18\x02 \x01(\x0b\x32!.calculations.CalculationMetadata\"}\n\x11VolumeRequirement\x12\x12\n\nfluid_type\x18\x01 \x01(\t\x12\x11\n\tvolume_m3\x18\x02 \x01(\x01\x12\x12\n\nvolume_bbl\x18\x03 \x01(\x01\x12\x12\n\nvolume_gal\x18\x04 \x01(\x01\x12\x19\n\x11\x63\x61lculation_basis\x18\x05 \x01(\t\"\x98\x01\n\x13\x43\x61lculationMetadata\x12\x16\n\x0e\x61lgorithm_used\x18\x01 \x01(\t\x12\x12\n\niterations\x18\x02 \x01(\x05\x12\x19\n\x11\x66inal_convergence\x18\x03 \x01(\x01\x12\x12\n\nelapsed_ms\x18\x04 \x01(\x03\x12\x11\n\tconverged\x18\x05 \x01(\x08\x12\x13\n\x0bunit_system\x18\x06 \x01(\t\"2\n\x05\x45rror\x12\x12\n\nerror_code\x18\x01 \x01(\t\x12\x15\n\rerror_message\x18\x02 \x01(\t\"B\n\x0eHealthResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x0f\n\x07service\x18\x03 \x01(\t2\xa8\x01\n\x12\x43\x61lculationService\x12P\n\tCalculate\x12 .calculations.CalculationRequest\x1a\x1f.calculations.CalculationUpdate0\x01\x12@\n\x0bHealthCheck\x12\x13.calculations.Empty\x1a\x1c.calculations.HealthResponseB1\n\x1c\x63om.oilgas.calculations.grpcB\x11\x43\x61lculationsProtob\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,26 +34,28 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._serialized_options = b'\n\034com.oilgas.calculations.grpcB\021CalculationsProto'
   _globals['_EMPTY']._serialized_start=35
   _globals['_EMPTY']._serialized_end=42
-  _globals['_CALCULATIONREQUEST']._serialized_start=45
-  _globals['_CALCULATIONREQUEST']._serialized_end=241
-  _globals['_WELLCONFIGURATION']._serialized_start=243
-  _globals['_WELLCONFIGURATION']._serialized_end=368
-  _globals['_CALCULATIONOPTIONS']._serialized_start=370
-  _globals['_CALCULATIONOPTIONS']._serialized_end=477
-  _globals['_CALCULATIONUPDATE']._serialized_start=480
-  _globals['_CALCULATIONUPDATE']._serialized_end=666
-  _globals['_PROGRESS']._serialized_start=668
-  _globals['_PROGRESS']._serialized_end=777
-  _globals['_CALCULATIONRESULT']._serialized_start=779
-  _globals['_CALCULATIONRESULT']._serialized_end=901
-  _globals['_VOLUMEREQUIREMENT']._serialized_start=903
-  _globals['_VOLUMEREQUIREMENT']._serialized_end=1028
-  _globals['_CALCULATIONMETADATA']._serialized_start=1031
-  _globals['_CALCULATIONMETADATA']._serialized_end=1183
-  _globals['_ERROR']._serialized_start=1185
-  _globals['_ERROR']._serialized_end=1235
-  _globals['_HEALTHRESPONSE']._serialized_start=1237
-  _globals['_HEALTHRESPONSE']._serialized_end=1303
-  _globals['_CALCULATIONSERVICE']._serialized_start=1306
-  _globals['_CALCULATIONSERVICE']._serialized_end=1474
+  _globals['_WELLPARAMETERS']._serialized_start=45
+  _globals['_WELLPARAMETERS']._serialized_end=357
+  _globals['_CALCULATIONREQUEST']._serialized_start=360
+  _globals['_CALCULATIONREQUEST']._serialized_end=560
+  _globals['_WELLCONFIGURATION']._serialized_start=562
+  _globals['_WELLCONFIGURATION']._serialized_end=687
+  _globals['_CALCULATIONOPTIONS']._serialized_start=689
+  _globals['_CALCULATIONOPTIONS']._serialized_end=730
+  _globals['_CALCULATIONUPDATE']._serialized_start=733
+  _globals['_CALCULATIONUPDATE']._serialized_end=919
+  _globals['_PROGRESS']._serialized_start=922
+  _globals['_PROGRESS']._serialized_end=1164
+  _globals['_CALCULATIONRESULT']._serialized_start=1166
+  _globals['_CALCULATIONRESULT']._serialized_end=1288
+  _globals['_VOLUMEREQUIREMENT']._serialized_start=1290
+  _globals['_VOLUMEREQUIREMENT']._serialized_end=1415
+  _globals['_CALCULATIONMETADATA']._serialized_start=1418
+  _globals['_CALCULATIONMETADATA']._serialized_end=1570
+  _globals['_ERROR']._serialized_start=1572
+  _globals['_ERROR']._serialized_end=1622
+  _globals['_HEALTHRESPONSE']._serialized_start=1624
+  _globals['_HEALTHRESPONSE']._serialized_end=1690
+  _globals['_CALCULATIONSERVICE']._serialized_start=1693
+  _globals['_CALCULATIONSERVICE']._serialized_end=1861
 # @@protoc_insertion_point(module_scope)
