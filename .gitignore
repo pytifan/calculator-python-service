@@ -6,3 +6,11 @@ __pycache__/
 .DS_Store
 *.iml
 .gitignore.py
+
+
+### VS Code ###
+.vscode/
+
+### Claude Code ###
+.claude/
+CLAUDE.md
